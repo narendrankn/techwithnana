@@ -1,0 +1,23 @@
+pipeline{
+    agent any
+    
+    stages{
+        stage("git checkout"){
+            steps{
+                git credentialsId: 'narendrankn', url: 'https://github.com/narendrankn/sample-projects.git'
+            }
+        }
+         stage("Mavenbuild"){
+            steps{
+               sh "mvn clean package"
+            }
+        }
+         stage("deploy to tomcat"){
+            steps{
+               sshagent(['ubuntu']) {
+                   sh "scp -o StrictHostKeyChecking=no /var/lib/jenkins/workspace/pipeline/target/maven-web-application.war ubuntu@13.127.250.115:/opt/tomcat/webapps" 
+            }
+            }
+        }
+    }
+}
