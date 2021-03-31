@@ -1,0 +1,33 @@
+pipeline{
+    agent any
+    
+    stages{
+        stage("git checkout"){
+            steps{
+                git credentialsId: 'narendrankn', url: 'https://github.com/narendrankn/sample-projects.git'
+            }
+        }
+         stage("Mavenbuild"){
+            steps{
+               sh "mvn clean package"
+            }
+        }
+         stage("deploy to tomcat"){
+            steps{
+               sshagent(['ubuntu']) {
+                   sh "scp -o StrictHostKeyChecking=no /var/lib/jenkins/workspace/pipeline/target/maven-web-application.war ubuntu@13.127.250.115:/opt/tomcat/webapps" 
+            }
+            }
+             stage("store archfiate s3 bucket"){
+            steps{
+             withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AKIAYQJHLMOSAT46HSUF', credentialsId: 'deploytos3', secretKeyVariable: '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']]) {
+               sh "aws s3 ls"
+               sh "aws s3 mb s3://cloud-clone-to-s3-bucket"
+               sh "aws s3 cp /var/lib/jenkins/workspace/pipeline/target/maven-web-application.war s3://cloud-clone-to-s3-bucket"
+                    } 
+            }
+            }
+        }
+        
+    }
+}
